@@ -133,7 +133,6 @@ contract SimpleSwap {
         uint256 _amountADesired = amountADesired;
         uint256 _amountBDesired = amountBDesired;
 
-
         // If there is pre-existing liquidity, 
         // calculate the optimal amount of tokenB 
         // for a given amount of tokenA
@@ -202,6 +201,61 @@ contract SimpleSwap {
             z = 1;
         }
     }
+
+
+    /**
+     * @notice Exchanges an exact amount of input tokens for output tokens.
+     * @param amountIn Amount of input token.
+     * @param amountOutMin Minimum acceptable output token amount (slippage protection).
+     * @param path Input token address and Output token address.
+     * @param to Address that will receive the output tokens.
+     * @param deadline Deadline for the transaction to be valid (front-running protection).
+     * @return amounts Array with input and output quantities.
+     */
+    function swapExactTokensForTokens(uint amountIn, 
+                                      uint amountOutMin, 
+                                      address[] calldata path, 
+                                      address to, 
+                                      uint deadline) 
+                                      external returns (uint[] memory amounts){
+
+        require(deadline >= block.timestamp, "SimpleSwap: DEADLINE_EXPIRED");
+
+        address tokenIn = path[0];
+        address tokenOut = path[1];
+
+        uint256 _reserveA = reserveA;
+        uint256 _reserveB = reserveB;
+
+        // Determine input and output reserves based on token addresses
+        (uint256 reserveIn, uint256 reserveOut) = (tokenIn == address(tokenA)) ? (_reserveA, _reserveB) : (_reserveB, _reserveA);
+
+        uint256 _amountIn = amountIn;
+        amounts[0] = _amountIn;
+        // Calculate how much output token should be received
+        uint256 amountOut = getAmountOut(amountIn, reserveIn, reserveOut);
+        require(amountOut >= amountOutMin, "SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");
+        amounts[1] = amountOut;
+
+        // Make transfers
+        // 1. Collect the user's input token
+        ERC20(tokenIn).transferFrom(msg.sender, address(this), _amountIn);
+        
+        // 2. Send the output token to the recipient
+        ERC20(tokenOut).transfer(to, amountOut);
+
+        // 3. Update reservations
+        uint256 balance0 = tokenA.balanceOf(address(this));
+        uint256 balance1 = tokenB.balanceOf(address(this));
+        _updateLiquidity(balance0, balance1);
+
+        return amounts;
+    }
+
+
+
+
+
 
     /*
     function removeLiquidity(address tokenA, 
