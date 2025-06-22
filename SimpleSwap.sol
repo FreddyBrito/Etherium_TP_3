@@ -69,6 +69,8 @@ contract SimpleSwap {
     /**
      * @notice Returns the instant price of tokenA in terms of tokenB.
      * @dev It is based on the proportion of reserves. It does not consider the impact of a trade.
+     * @param _tokenA TokenA contract address.
+     * @param _tokenB TokenB contract address
      * @return The price of 1 tokenA in units of tokenB.
      */
     function getPrice(address _tokenA, address _tokenB) external view returns (uint256){
@@ -234,6 +236,59 @@ contract SimpleSwap {
         _updateLiquidity(balance0, balance1);
 
         return amounts;
+    }
+
+
+    /**
+     * @notice Withdraw liquidity from the pool.
+     * @param _tokenA TokenA contract address.
+     * @param _tokenB TokenB contract address.
+     * @param liquidity Amount of liquidity tokens to withdraw.
+     * @param amountAMin Acceptable minimums to avoid failures.
+     * @param amountBMin Acceptable minimums to avoid failures.
+     * @param to Address of the recipient.
+     * @param deadline Timestamp for the transaction.
+     * @return amountA Amounts received after withdrawing liquidity.
+     * @return amountB Amounts received after withdrawing liquidity.
+     */
+    function removeLiquidity(address _tokenA, 
+                             address _tokenB, 
+                             uint liquidity, 
+                             uint amountAMin, 
+                             uint amountBMin, 
+                             address to, 
+                             uint deadline) 
+                             external returns (uint amountA, 
+                                               uint amountB){
+        
+        require(balanceOf[msg.sender] >= liquidity, "SimpleSwap: INSUFFICIENT_LIQUIDITY_BURNED");
+        require(deadline >= block.timestamp, "SimpleSwap: DEADLINE_EXPIRED");
+
+        uint256 _balanceA = tokenA.balanceOf(address(this));
+        uint256 _balanceB = tokenB.balanceOf(address(this));
+        uint256 _totalSupply = totalSupply;
+
+        // Calculate the amount of each token to be returned
+        amountA = (liquidity * _balanceA) / _totalSupply;
+        amountB = (liquidity * _balanceB) / _totalSupply;
+        
+        require(amountA > 0 && amountB > 0, "SimpleSwap: INSUFFICIENT_LIQUIDITY_RETURNED");
+        require(amountAMin > amountA, "SimpleSwap: INSUFFICIENT_LIQUIDITY_TOKEN_A");
+        require(amountBMin > amountB, "SimpleSwap: INSUFFICIENT_LIQUIDITY_TOKEN_B");
+
+        // Burn the user's shares
+        balanceOf[to] -= liquidity;
+        totalSupply = _totalSupply - liquidity;
+
+        // Send the tokens back to the user
+        tokenA.transfer(to, amountA);
+        tokenB.transfer(to, amountB);
+
+        // Update reservations
+        _updateLiquidity(tokenA.balanceOf(address(this)), tokenB.balanceOf(address(this)));
+
+        // Calculate and return tokens A and B.
+        return (amountA, amountB);
     }
 
 
