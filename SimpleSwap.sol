@@ -251,15 +251,7 @@ contract SimpleSwap {
      * @return amountA Amounts received after withdrawing liquidity.
      * @return amountB Amounts received after withdrawing liquidity.
      */
-    function removeLiquidity(address _tokenA, 
-                             address _tokenB, 
-                             uint liquidity, 
-                             uint amountAMin, 
-                             uint amountBMin, 
-                             address to, 
-                             uint deadline) 
-                             external returns (uint amountA, 
-                                               uint amountB){
+    function removeLiquidity(address _tokenA, address _tokenB, uint liquidity, uint amountAMin, uint amountBMin, address to, uint deadline) external returns (uint amountA, uint amountB){
         
         require(balanceOf[msg.sender] >= liquidity, "SimpleSwap: INSUFFICIENT_LIQUIDITY_BURNED");
         require(deadline >= block.timestamp, "SimpleSwap: DEADLINE_EXPIRED");
