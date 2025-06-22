@@ -203,18 +203,11 @@ contract SimpleSwap {
      * @param deadline Deadline for the transaction to be valid (front-running protection).
      * @return amounts Array with input and output quantities.
      */
-    function swapExactTokensForTokens(uint amountIn, 
-                                      uint amountOutMin, 
-                                      address[] calldata path, 
-                                      address to, 
-                                      uint deadline) 
-                                      external returns (uint[] memory amounts){
-
+    function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts){
         require(deadline >= block.timestamp, "SimpleSwap: DEADLINE_EXPIRED");
 
         address tokenIn = path[0];
         address tokenOut = path[1];
-
         uint256 _reserveA = reserveA;
         uint256 _reserveB = reserveB;
 
@@ -244,6 +237,8 @@ contract SimpleSwap {
     }
 
 
+
+  
 
 
 
