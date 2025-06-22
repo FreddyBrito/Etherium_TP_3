@@ -28,8 +28,7 @@ contract SimpleSwap {
     uint256 public totalSupply; // Total LP tokens issued
     mapping(address => uint256) public balanceOf; // LP token balances per user
 
-    address private addressTokenA;
-    address private addressTokenB;
+   
 
     /**
      * @dev When deploying the contract we set the token pair.
@@ -39,8 +38,6 @@ contract SimpleSwap {
     constructor(address _tokenA, address _tokenB) {
         tokenA = ERC20(_tokenA);
         tokenB = ERC20(_tokenB);
-        addressTokenA = _tokenA;
-        addressTokenB = _tokenB;
     }
 
     // Compare that two addresses are the same
@@ -78,24 +75,10 @@ contract SimpleSwap {
         require(reserveA > 0 && reserveB > 0, "SimpleSwap: NO_LIQUIDITY");
         
         // Get reserves of both tokens
-        uint256 _reserveA;
-        uint256 _reserveB;
+        // Determine input and output reserves based on token addresses
+        uint256 _reserveA = (_tokenA == address(tokenA)) ? reserveA : reserveB;
+        uint256 _reserveB = (_tokenB == address(tokenB)) ? reserveB : reserveA;
 
-        if (isSameAddress(_tokenA, addressTokenA)) {
-            _reserveA = reserveA;
-        }
-
-        if (isSameAddress(_tokenA, addressTokenB)) {
-            _reserveA = reserveB;
-        }
-
-        if (isSameAddress(_tokenB, addressTokenA)) {
-            _reserveB = reserveA;
-        }
-
-        if (isSameAddress(_tokenB, addressTokenB)) {
-            _reserveB = reserveB;
-        }
         // Calculate and return the price
         // Multiply by 1e18 to handle decimals.
         return (_reserveB * 1e18) / _reserveA;
@@ -128,10 +111,18 @@ contract SimpleSwap {
     */
     function addLiquidity(address _tokenA, address _tokenB, uint256 amountADesired, uint256 amountBDesired, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) external returns (uint256 amountA, uint256 amountB, uint256 liquidity) {
 
-        uint256 _reserveA = reserveA;
-        uint256 _reserveB = reserveB;
+        require(deadline >= block.timestamp, "SimpleSwap: DEADLINE_EXPIRED");
+        // Get reserves of both tokens
+        // Determine input and output reserves based on token addresses
+        uint256 _reserveA = (_tokenA == address(tokenA)) ? reserveA : reserveB;
+        uint256 _reserveB = (_tokenB == address(tokenB)) ? reserveB : reserveA;
+
         uint256 _amountADesired = amountADesired;
         uint256 _amountBDesired = amountBDesired;
+
+        // I assign 0 to these amounts because I will not consider them for any calculations.
+        amountAMin = 0;
+        amountBMin = 0;
 
         // If there is pre-existing liquidity, 
         // calculate the optimal amount of tokenB 
