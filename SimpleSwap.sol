@@ -28,6 +28,16 @@ contract SimpleSwap {
     uint256 public totalSupply; // Total LP tokens issued
     mapping(address => uint256) public balanceOf; // LP token balances per user
 
+    /**
+     * @dev When deploying the contract we set the token pair.
+     * @param _tokenA Address of the first ERC-20 token. (FTK)
+     * @param _tokenB Address of the second ERC-20 token. (BTK)
+     */
+    constructor(address _tokenA, address _tokenB) {
+        tokenA = ERC20(_tokenA);
+        tokenB = ERC20(_tokenB);
+    }
+
     /*
 
     function addLiquidity(address tokenA, 
