@@ -38,6 +38,24 @@ contract SimpleSwap {
         tokenB = ERC20(_tokenB);
     }
 
+
+    /**
+     * @notice Returns the number of output tokens for a given input amount.
+     * @dev This is a pure view function, it does not modify state.
+     * @param amountIn The amount of the token being sent to the pool.
+     * @param reserveIn The reservation of the input token.
+     * @param reserveOut The reserve of the output token.
+     * @return amountOut The amount of the token to be received.
+     */
+    function getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut) public pure returns (uint256 amountOut) {
+        require(amountIn > 0, "SimpleSwap: INSUFFICIENT_INOUT_AMOUNT");
+        require(reserveIn > 0 && reserveOut > 0, "SimpleSwap: INSUFFICIENT_LIQUIDITY");
+
+        uint256 numerator = amountIn * reserveOut;
+        uint256 denominator = reserveIn + amountIn;
+        amountOut = numerator / denominator;
+    }
+
     /*
 
     function addLiquidity(address tokenA, 
