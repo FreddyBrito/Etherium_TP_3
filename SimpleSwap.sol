@@ -62,8 +62,9 @@ contract SimpleSwap {
         require(amountIn > 0, "SimpleSwap: INSUFFICIENT_INOUT_AMOUNT");
         require(reserveIn > 0 && reserveOut > 0, "SimpleSwap: INSUFFICIENT_LIQUIDITY");
 
-        uint256 numerator = amountIn * reserveOut;
-        uint256 denominator = reserveIn + amountIn;
+        uint256 amountInWithFee = amountIn * 997; // 0.3% Commission (1000 - 3)
+        uint256 numerator = amountInWithFee * reserveOut;
+        uint256 denominator = (reserveIn * 1000) + amountInWithFee;
         amountOut = numerator / denominator;
     }
 
