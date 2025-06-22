@@ -11,6 +11,23 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  */
 contract SimpleSwap {
 
+    /**
+    * @dev Variable declaration,  
+    * We make them public so that Solidity automatically creates a getter function for them.
+    */
+
+    // Variables for the pair tokens
+    ERC20 public tokenA;
+    ERC20 public tokenB;
+
+    // Pool reservations
+    uint256 public reserveA;
+    uint256 public reserveB;
+
+    // Variables for LP (Liquidity Pool) tokens
+    uint256 public totalSupply; // Total LP tokens issued
+    mapping(address => uint256) public balanceOf; // LP token balances per user
+
     /*
 
     function addLiquidity(address tokenA, 
