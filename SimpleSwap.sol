@@ -9,7 +9,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  * exchange tokens, obtain prices and calculate amounts to receive
  * Allows exchanges between two ERC-20 tokens.
  */
-contract SimpleSwap {
+contract SimpleSwap is ERC20 {
 
     /**
     * @dev Variable declaration,  
@@ -25,27 +25,28 @@ contract SimpleSwap {
     uint256 public reserveB;
 
     // Variables for LP (Liquidity Pool) tokens
-    uint256 public totalSupply; // Total LP tokens issued
-    mapping(address => uint256) public balanceOf; // LP token balances per user
+    //uint256 public totalSupply; // Total LP tokens issued
+    // mapping(address => uint256) public balanceOf; // LP token balances per user
 
    
 
+
+   // --- Constructor ---
+
     /**
-     * @dev When deploying the contract we set the token pair.
+     * @dev When deploying the contract we set the token pair and the liquidity token is created.
      * @param _tokenA Address of the first ERC-20 token. (FTK)
      * @param _tokenB Address of the second ERC-20 token. (BTK)
      */
-    constructor(address _tokenA, address _tokenB) {
+    constructor(address _tokenA, address _tokenB) ERC20("SimpleSwap Liquidity", "SSL") {
         tokenA = ERC20(_tokenA);
         tokenB = ERC20(_tokenB);
     }
 
-    // Compare that two addresses are the same
-    function isSameAddress(address a, address b) public pure returns (bool) {
-    return a == b;
-    }
 
 
+
+    // --- Reading Functions (View/Pure) ---
 
     /**
      * @notice Returns the number of output tokens for a given input amount.
@@ -87,6 +88,10 @@ contract SimpleSwap {
     }
 
 
+
+
+    // --- Writing Functions ---
+
     /**
      * @dev Update reservations with current contract balances.
      */
@@ -95,7 +100,7 @@ contract SimpleSwap {
         reserveB = balanceB;
     }
 
-    
+
     /**
     * @notice Adds liquidity to the pair.
     * @dev The user must have approved the contract to spend their tokens first.
@@ -161,38 +166,22 @@ contract SimpleSwap {
         uint256 amountBAdded = balanceB - _reserveB;
 
         // Mint LP tokens
-        if (totalSupply == 0) {
+        if (totalSupply() == 0) {
             // First, the amount of shares is the square root of the product of the amounts
             liquidity = sqrt(amountAAdded * amountBAdded);
         } else {
             // Proportional to existing liquidity
-            liquidity = ((amountAAdded * totalSupply) / _reserveA);
+            liquidity = ((amountAAdded * totalSupply()) / _reserveA);
         }
 
         require(liquidity > 0, "SimpleSwap: MINT_FAILED");
 
-        totalSupply += liquidity;
-        balanceOf[msg.sender] += liquidity;
-
+        _mint(msg.sender, liquidity);
         _updateLiquidity(balanceA, balanceB);
         amountA = balanceA;
         amountB = balanceB;
 
         return (amountA, amountB, liquidity);
-    }
-
-    // Auxiliary function to calculate the square root, necessary for the first minting.
-    function sqrt(uint y) private pure returns (uint z) {
-        if (y > 3) {
-            z = y;
-            uint x = y / 2 + 1;
-            while (x < z) {
-                z = x;
-                x = (y / x + x) / 2;
-            }
-        } else if (y != 0) {
-            z = 1;
-        }
     }
 
 
@@ -207,17 +196,16 @@ contract SimpleSwap {
      */
     function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts){
         require(deadline >= block.timestamp, "SimpleSwap: DEADLINE_EXPIRED");
+        require(path.length == 2, "SimpleSwap: INVALID_PATH");
 
         address tokenIn = path[0];
         address tokenOut = path[1];
-        uint256 _reserveA = reserveA;
-        uint256 _reserveB = reserveB;
 
         // Determine input and output reserves based on token addresses
-        (uint256 reserveIn, uint256 reserveOut) = (tokenIn == address(tokenA)) ? (_reserveA, _reserveB) : (_reserveB, _reserveA);
+        (uint256 reserveIn, uint256 reserveOut) = (tokenIn == address(tokenA)) ? (reserveA, reserveB) : (reserveB, reserveA);
 
-        uint256 _amountIn = amountIn;
-        amounts[0] = _amountIn;
+        amounts = new uint[](2);
+        amounts[0] = amountIn;
         // Calculate how much output token should be received
         uint256 amountOut = getAmountOut(amountIn, reserveIn, reserveOut);
         require(amountOut >= amountOutMin, "SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");
@@ -225,15 +213,13 @@ contract SimpleSwap {
 
         // Make transfers
         // 1. Collect the user's input token
-        ERC20(tokenIn).transferFrom(msg.sender, address(this), _amountIn);
+        tokenA.transferFrom(msg.sender, address(this), amountIn);
         
         // 2. Send the output token to the recipient
-        ERC20(tokenOut).transfer(to, amountOut);
+        tokenB.transfer(to, amountOut);
 
         // 3. Update reservations
-        uint256 balance0 = tokenA.balanceOf(address(this));
-        uint256 balance1 = tokenB.balanceOf(address(this));
-        _updateLiquidity(balance0, balance1);
+        _updateLiquidity(tokenA.balanceOf(address(this)), tokenB.balanceOf(address(this)));
 
         return amounts;
     }
@@ -253,12 +239,12 @@ contract SimpleSwap {
      */
     function removeLiquidity(address _tokenA, address _tokenB, uint liquidity, uint amountAMin, uint amountBMin, address to, uint deadline) external returns (uint amountA, uint amountB){
         
-        require(balanceOf[msg.sender] >= liquidity, "SimpleSwap: INSUFFICIENT_LIQUIDITY_BURNED");
+        require(balanceOf(msg.sender) >= liquidity, "SimpleSwap: INSUFFICIENT_LIQUIDITY_BURNED");
         require(deadline >= block.timestamp, "SimpleSwap: DEADLINE_EXPIRED");
 
         uint256 _balanceA = tokenA.balanceOf(address(this));
         uint256 _balanceB = tokenB.balanceOf(address(this));
-        uint256 _totalSupply = totalSupply;
+        uint256 _totalSupply = totalSupply();
 
         // Calculate the amount of each token to be returned
         amountA = (liquidity * _balanceA) / _totalSupply;
@@ -269,12 +255,11 @@ contract SimpleSwap {
         require(amountBMin > amountB, "SimpleSwap: INSUFFICIENT_LIQUIDITY_TOKEN_B");
 
         // Burn the user's shares
-        balanceOf[to] -= liquidity;
-        totalSupply = _totalSupply - liquidity;
+        _burn(msg.sender, liquidity);
 
         // Send the tokens back to the user
-        tokenA.transfer(to, amountA);
-        tokenB.transfer(to, amountB);
+        tokenA.transfer(msg.sender, amountA);
+        tokenB.transfer(msg.sender, amountB);
 
         // Update reservations
         _updateLiquidity(tokenA.balanceOf(address(this)), tokenB.balanceOf(address(this)));
@@ -282,5 +267,32 @@ contract SimpleSwap {
         // Calculate and return tokens A and B.
         return (amountA, amountB);
     }
+
+
+
+
+    // --- Auxiliary Functions ---
+
+
+    // Compare that two addresses are the same
+    function isSameAddress(address a, address b) public pure returns (bool) {
+    return a == b;
+    }
+
+
+    // Auxiliary function to calculate the square root, necessary for the first minting.
+    function sqrt(uint y) private pure returns (uint z) {
+        if (y > 3) {
+            z = y;
+            uint x = y / 2 + 1;
+            while (x < z) {
+                z = x;
+                x = (y / x + x) / 2;
+            }
+        } else if (y != 0) {
+            z = 1;
+        }
+    }
+
 
 }
