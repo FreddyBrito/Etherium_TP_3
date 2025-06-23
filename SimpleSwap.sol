@@ -273,13 +273,6 @@ contract SimpleSwap is ERC20 {
 
     // --- Auxiliary Functions ---
 
-
-    // Compare that two addresses are the same
-    function isSameAddress(address a, address b) public pure returns (bool) {
-    return a == b;
-    }
-
-
     // Auxiliary function to calculate the square root, necessary for the first minting.
     function sqrt(uint y) private pure returns (uint z) {
         if (y > 3) {
