@@ -57,8 +57,8 @@ contract SimpleSwap is ERC20 {
      * @return amountOut The amount of the token to be received.
      */
     function getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut) public pure returns (uint256 amountOut) {
-        require(amountIn > 0, "SimpleSwap: INSUFFICIENT_INOUT_AMOUNT");
-        require(reserveIn > 0 && reserveOut > 0, "SimpleSwap: INSUFFICIENT_LIQUIDITY");
+        require(amountIn > 0, "INSUFFICIENT_INPUT");
+        require(reserveIn > 0 && reserveOut > 0, "NO_LIQUIDITY");
 
         uint256 amountInWithFee = amountIn * 997; // 0.3% Commission (1000 - 3)
         uint256 numerator = amountInWithFee * reserveOut;
@@ -75,7 +75,7 @@ contract SimpleSwap is ERC20 {
      * @return The price of 1 tokenA in units of tokenB.
      */
     function getPrice(address _tokenA, address _tokenB) external view returns (uint256){
-        require(reserveA > 0 && reserveB > 0, "SimpleSwap: NO_LIQUIDITY");
+        require(reserveA > 0 && reserveB > 0, "NO_LIQUIDITY");
         
         // Get reserves of both tokens
         // Determine input and output reserves based on token addresses
@@ -118,7 +118,7 @@ contract SimpleSwap is ERC20 {
     */
     function addLiquidity(address _tokenA, address _tokenB, uint256 amountADesired, uint256 amountBDesired, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) external returns (uint256 amountA, uint256 amountB, uint256 liquidity) {
 
-        require(deadline >= block.timestamp, "SimpleSwap: DEADLINE_EXPIRED");
+        require(deadline >= block.timestamp, "DEADLINE_EXPIRED");
         // Get reserves of both tokens
         // Determine input and output reserves based on token addresses
         uint256 _reserveA = (_tokenA == address(tokenA)) ? reserveA : reserveB;
@@ -174,7 +174,7 @@ contract SimpleSwap is ERC20 {
             liquidity = ((amountAAdded * totalSupply()) / _reserveA);
         }
 
-        require(liquidity > 0, "SimpleSwap: MINT_FAILED");
+        require(liquidity > 0, "MINT_FAILED");
 
         _mint(msg.sender, liquidity);
         _updateLiquidity(balanceA, balanceB);
@@ -195,8 +195,8 @@ contract SimpleSwap is ERC20 {
      * @return amounts Array with input and output quantities.
      */
     function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts){
-        require(deadline >= block.timestamp, "SimpleSwap: DEADLINE_EXPIRED");
-        require(path.length == 2, "SimpleSwap: INVALID_PATH");
+        require(deadline >= block.timestamp, "EXPIRED");
+        require(path.length == 2, "BAD_PATH");
 
         address tokenIn = path[0];
         address tokenOut = path[1];
@@ -208,7 +208,7 @@ contract SimpleSwap is ERC20 {
         amounts[0] = amountIn;
         // Calculate how much output token should be received
         uint256 amountOut = getAmountOut(amountIn, reserveIn, reserveOut);
-        require(amountOut >= amountOutMin, "SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");
+        require(amountOut >= amountOutMin, "SLIPPAGE_EXCEEDED");
         amounts[1] = amountOut;
 
         // Make transfers
@@ -239,8 +239,8 @@ contract SimpleSwap is ERC20 {
      */
     function removeLiquidity(address _tokenA, address _tokenB, uint liquidity, uint amountAMin, uint amountBMin, address to, uint deadline) external returns (uint amountA, uint amountB){
         
-        require(balanceOf(msg.sender) >= liquidity, "SimpleSwap: INSUFFICIENT_LIQUIDITY_BURNED");
-        require(deadline >= block.timestamp, "SimpleSwap: DEADLINE_EXPIRED");
+        require(balanceOf(msg.sender) >= liquidity, "INSUFFICIENT_BURN");
+        require(deadline >= block.timestamp, "EXPIRED");
 
         uint256 _balanceA = tokenA.balanceOf(address(this));
         uint256 _balanceB = tokenB.balanceOf(address(this));
@@ -250,9 +250,9 @@ contract SimpleSwap is ERC20 {
         amountA = (liquidity * _balanceA) / _totalSupply;
         amountB = (liquidity * _balanceB) / _totalSupply;
         
-        require(amountA > 0 && amountB > 0, "SimpleSwap: INSUFFICIENT_LIQUIDITY_RETURNED");
-        require(amountAMin > amountA, "SimpleSwap: INSUFFICIENT_LIQUIDITY_TOKEN_A");
-        require(amountBMin > amountB, "SimpleSwap: INSUFFICIENT_LIQUIDITY_TOKEN_B");
+        require(amountA > 0 && amountB > 0, "ZERO_LIQUIDITY");
+        require(amountAMin > amountA, "LOW_TOKEN_A");
+        require(amountBMin > amountB, "LOW_TOKEN_B");
 
         // Burn the user's shares
         _burn(msg.sender, liquidity);
