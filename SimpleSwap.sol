@@ -75,12 +75,14 @@ contract SimpleSwap is ERC20 {
      * @return The price of 1 tokenA in units of tokenB.
      */
     function getPrice(address _tokenA, address _tokenB) external view returns (uint256){
-        require(reserveA > 0 && reserveB > 0, "NO_LIQUIDITY");
+        uint256 reserve_A = reserveA;
+        uint256 reserve_B = reserveB;
+        require(reserve_A > 0 && reserve_B > 0, "NO_LIQUIDITY");
         
         // Get reserves of both tokens
         // Determine input and output reserves based on token addresses
-        uint256 _reserveA = (_tokenA == address(tokenA)) ? reserveA : reserveB;
-        uint256 _reserveB = (_tokenB == address(tokenB)) ? reserveB : reserveA;
+        uint256 _reserveA = (_tokenA == address(tokenA)) ? reserve_A : reserve_B;
+        uint256 _reserveB = (_tokenB == address(tokenB)) ? reserve_B : reserve_A;
 
         // Calculate and return the price
         // Multiply by 1e18 to handle decimals.
@@ -117,12 +119,13 @@ contract SimpleSwap is ERC20 {
     * @return liquidity Amount of liquidity tokens minted.
     */
     function addLiquidity(address _tokenA, address _tokenB, uint256 amountADesired, uint256 amountBDesired, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) external returns (uint256 amountA, uint256 amountB, uint256 liquidity) {
-
+        uint256 reserve_A = reserveA;
+        uint256 reserve_B = reserveB;
         require(deadline >= block.timestamp, "DEADLINE_EXPIRED");
         // Get reserves of both tokens
         // Determine input and output reserves based on token addresses
-        uint256 _reserveA = (_tokenA == address(tokenA)) ? reserveA : reserveB;
-        uint256 _reserveB = (_tokenB == address(tokenB)) ? reserveB : reserveA;
+        uint256 _reserveA = (_tokenA == address(tokenA)) ? reserve_A : reserve_B;
+        uint256 _reserveB = (_tokenB == address(tokenB)) ? reserve_B : reserve_A;
 
         uint256 _amountADesired = amountADesired;
         uint256 _amountBDesired = amountBDesired;
@@ -201,8 +204,11 @@ contract SimpleSwap is ERC20 {
         address tokenIn = path[0];
         address tokenOut = path[1];
 
+        uint256 _reserveA = reserveA;
+        uint256 _reserveB = reserveB;
+
         // Determine input and output reserves based on token addresses
-        (uint256 reserveIn, uint256 reserveOut) = (tokenIn == address(tokenA)) ? (reserveA, reserveB) : (reserveB, reserveA);
+        (uint256 reserveIn, uint256 reserveOut) = (tokenIn == address(tokenA)) ? (_reserveA, _reserveB) : (_reserveB, _reserveA);
 
         amounts = new uint[](2);
         amounts[0] = amountIn;
@@ -213,7 +219,7 @@ contract SimpleSwap is ERC20 {
 
         // Make transfers
         // 1. Collect the user's input token
-        tokenA.transferFrom(msg.sender, address(this), amountIn);
+        tokenA.transferFrom(msg.sender, address(this), amounts[0]);
         
         // 2. Send the output token to the recipient
         tokenB.transfer(to, amountOut);
@@ -247,25 +253,26 @@ contract SimpleSwap is ERC20 {
         uint256 _totalSupply = totalSupply();
 
         // Calculate the amount of each token to be returned
-        amountA = (liquidity * _balanceA) / _totalSupply;
-        amountB = (liquidity * _balanceB) / _totalSupply;
+        uint256 _amountA = (liquidity * _balanceA) / _totalSupply;
+        uint256 _amountB = (liquidity * _balanceB) / _totalSupply;
         
-        require(amountA > 0 && amountB > 0, "ZERO_LIQUIDITY");
-        require(amountAMin > amountA, "LOW_TOKEN_A");
-        require(amountBMin > amountB, "LOW_TOKEN_B");
+        require(_amountA > 0 && _amountB > 0, "ZERO_LIQUIDITY");
+        require(amountAMin > _amountA, "LOW_TOKEN_A");
+        require(amountBMin > _amountB, "LOW_TOKEN_B");
 
         // Burn the user's shares
         _burn(msg.sender, liquidity);
 
         // Send the tokens back to the user
-        tokenA.transfer(msg.sender, amountA);
-        tokenB.transfer(msg.sender, amountB);
+        tokenA.transfer(msg.sender, _amountA);
+        tokenB.transfer(msg.sender, _amountB);
 
         // Update reservations
         _updateLiquidity(tokenA.balanceOf(address(this)), tokenB.balanceOf(address(this)));
 
         // Calculate and return tokens A and B.
-        return (amountA, amountB);
+        amountA = _amountA;
+        amountB = _amountB;
     }
 
 
