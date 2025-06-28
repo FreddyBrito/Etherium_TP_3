@@ -1,5 +1,36 @@
 # Trabajo Final Módulo 3: Implementación de SimpleSwap
 
+---
+
+## SimpleSwap
+
+**Dirección del contrato:**  
+`0x246a982FB87F8A0BFf354820aD2d00a02A62FBfC`  
+[Ver en Etherscan](https://sepolia.etherscan.io/address/0x246a982FB87F8A0BFf354820aD2d00a02A62FBfC#code)
+
+---
+
+## tokenA (TokenBrito)
+
+**Dirección del token:**  
+`0x978110ED33f7c45874CDF13Df4c3D12148FD94A8`  
+[Ver en Etherscan](https://sepolia.etherscan.io/address/0x978110ED33f7c45874CDF13Df4c3D12148FD94A8)
+
+---
+
+## tokenB (TokenFreddy)
+
+**Dirección del token:**  
+`0x54F291892c6c9be28149e65731d6988A97fb04fd`  
+[Ver en Etherscan](https://sepolia.etherscan.io/address/0x54F291892c6c9be28149e65731d6988A97fb04fd)
+
+---
+
+## Transacción de validación
+
+[Ver transacción en Etherscan](https://sepolia.etherscan.io/tx/0xeb450b8b39815e2bc003b53a87c6928cacdaf52e1788dbe9a023be4184fe16d8)
+
+
 ## 🎯 Objetivo
 
 Crear un contrato inteligente llamado **SimpleSwap** que permita:
