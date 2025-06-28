@@ -24,12 +24,6 @@ contract SimpleSwap is ERC20 {
     uint256 public reserveA;
     uint256 public reserveB;
 
-    // Variables for LP (Liquidity Pool) tokens
-    //uint256 public totalSupply; // Total LP tokens issued
-    // mapping(address => uint256) public balanceOf; // LP token balances per user
-
-   
-
 
    // --- Constructor ---
 
@@ -43,6 +37,12 @@ contract SimpleSwap is ERC20 {
         tokenB = ERC20(_tokenB);
     }
 
+
+
+    // --- Events ---
+    event AddedLiquidity(address indexed investor, uint256 addedTokenA, uint256 addedTokenB);
+    event SwapTokens(address indexed swapper, uint256 amountIn, uint256 amountOut);
+    event LiquidityRemoved(address indexed to, uint256 liquidity, uint256 amountA, uint256 amountB);
 
 
 
@@ -88,7 +88,6 @@ contract SimpleSwap is ERC20 {
         // Multiply by 1e18 to handle decimals.
         return (_reserveB * 1e18) / _reserveA;
     }
-
 
 
 
@@ -179,6 +178,8 @@ contract SimpleSwap is ERC20 {
         _mint(to, liquidity);
         _updateLiquidity(balanceA, balanceB);
 
+        emit AddedLiquidity(msg.sender, amountAAdded, amountBAdded);
+
         return (amountAAdded, amountBAdded, liquidity);
     }
 
@@ -214,6 +215,8 @@ contract SimpleSwap is ERC20 {
         
         // 3. Update reservations
         _updateLiquidity(tokenA.balanceOf(address(this)), tokenB.balanceOf(address(this)));
+
+        emit SwapTokens(msg.sender, amountIn, amountOut);
     }
 
 
@@ -254,6 +257,8 @@ contract SimpleSwap is ERC20 {
 
         // Update reservations
         _updateLiquidity(tokenA.balanceOf(address(this)), tokenB.balanceOf(address(this)));
+
+        emit LiquidityRemoved(to, liquidity, _amountA, _amountB);
 
         return (_amountA, _amountB);
     }
