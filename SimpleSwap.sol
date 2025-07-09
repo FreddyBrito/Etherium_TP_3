@@ -20,9 +20,6 @@ contract SimpleSwap is ERC20, ReentrancyGuard {
     uint256 public reserveA;
     uint256 public reserveB;
 
-    // --- Constants ---
-
-    uint256 private constant MINIMUM_LIQUIDITY = 1000;
 
     // --- Events ---
     event AddLiquidity(address indexed provider, uint256 amountA, uint256 amountB, uint256 liquidity);
@@ -52,12 +49,17 @@ contract SimpleSwap is ERC20, ReentrancyGuard {
      * @notice Calculates the amount of output tokens for a given input amount, including fees.
      * @dev This is the standard Uniswap V2 formula for getAmountOut.
      */
-    function getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut) public pure returns (uint256 amountOut) {
+    function getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut) private pure returns (uint256 amountOut) {
         require(amountIn > 0, "INSUFFICIENT_INPUT_AMOUNT");
         require(reserveIn > 0 && reserveOut > 0, "INSUFFICIENT_LIQUIDITY");
 
         // The ratio of reserves is based on the ratio of input amounts and output amounts.
         amountOut = (amountIn * reserveOut) / (reserveIn + amountIn);
+    }
+
+    function getAmountByTokenToChange(address token, uint256 amountToChange) public view returns (uint256 amountToPay) {
+        (uint256 reserveIn, uint256 reserveOut) = (token == address(tokenA)) ? (reserveA, reserveB) : (reserveB, reserveA);
+        amountToPay = getAmountOut(amountToChange, reserveIn, reserveOut);
     }
 
     /**
@@ -107,8 +109,7 @@ contract SimpleSwap is ERC20, ReentrancyGuard {
 
         uint256 _totalSupply = totalSupply();
         if (_totalSupply == 0) {
-            liquidity = sqrt(amountA * amountB) - MINIMUM_LIQUIDITY;
-            _mint(address(0), MINIMUM_LIQUIDITY); // Lock liquidity to protect first provider
+            liquidity = sqrt(amountA * amountB);
         } else {
             liquidity = Math.min((amountA * _totalSupply) / _reserveA, (amountB * _totalSupply) / _reserveB);
         }
