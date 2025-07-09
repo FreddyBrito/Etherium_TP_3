@@ -151,12 +151,14 @@ contract SimpleSwap is ERC20, ReentrancyGuard {
      */
     function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external nonReentrant ensure(deadline) {
         require(path.length == 2, "INVALID_PATH");
+        address _tokenA = address(tokenA);
+        address _tokenB = address(tokenB);
         address tokenInAddress = path[0];
         address tokenOutAddress = path[1];
-        require((tokenInAddress == address(tokenA) && tokenOutAddress == address(tokenB)) || (tokenInAddress == address(tokenB) && tokenOutAddress == address(tokenA)), "INVALID_TOKEN_PAIR");
+        require((tokenInAddress == _tokenA && tokenOutAddress == _tokenB) || (tokenInAddress == _tokenB && tokenOutAddress == _tokenA), "INVALID_TOKEN_PAIR");
 
         (uint256 _reserveA, uint256 _reserveB) = (reserveA, reserveB); // Gas optimization
-        (uint256 reserveIn, uint256 reserveOut) = (tokenInAddress == address(tokenA)) ? (_reserveA, _reserveB) : (_reserveB, _reserveA);
+        (uint256 reserveIn, uint256 reserveOut) = (tokenInAddress == _tokenA) ? (_reserveA, _reserveB) : (_reserveB, _reserveA);
   
         uint256 _amountIn = amountIn;
 
@@ -166,7 +168,7 @@ contract SimpleSwap is ERC20, ReentrancyGuard {
         ERC20(tokenOutAddress).transfer(to, amountOut);
 
         // Gas Optimization: Update reserves arithmetically
-        if (tokenInAddress == address(tokenA)) {
+        if (tokenInAddress == _tokenA) {
             _update(_reserveA + _amountIn, _reserveB - amountOut);
         } else {
             _update(_reserveA - amountOut, _reserveB + _amountIn);
